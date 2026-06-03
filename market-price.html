@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>豚枝肉 相場</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --white: #ffffff; --bg: #f7f7f5; --bg2: #f0f0ed;
+  --border: #dededa; --border2: #c8c8c2;
+  --text: #111110; --text2: #6b6b66; --text3: #a8a8a3;
+  --green: #1a7a3a; --green-bg: #edf7f0;
+  --red: #b91c1c; --red-bg: #fef2f2;
+  --sans: 'Inter', 'Noto Sans JP', sans-serif;
+  --serif: 'Inter', 'Noto Sans JP', sans-serif;
+  --mono: 'Inter', 'Noto Sans JP', monospace;
+
+  /* === Type scale === */
+  --fs-section: 21px;       /* セクションラベル */
+  --fs-header-bar: 18px;    /* アプリ名・ヘッダーボタン */
+  --fs-hero:    40px;       /* ヒーロー数値（代表相場） */
+  --fs-card-value: 22px;    /* カード主役値（メタカード・取引頭数） */
+  --fs-card-title: 15px;    /* カードタイトル（市場名・パネルタイトル） */
+  --fs-body:    13px;       /* テーブル等 */
+  --fs-meta:    11px;       /* サブテキスト */
+  --fs-label:   9px;        /* uppercase ラベル */
+
+  /* === Spacing === */
+  --gap-card:    12px;      /* カード間ギャップ */
+  --gap-section: 28px;      /* セクション間マージン */
+  --pad-card:    16px;      /* カード内パディング */
+  --pad-card-y:  18px;      /* カード上下パディング */
+
+  /* === Radius === */
+  --r-card: 6px;
+}
+body { background: var(--bg); font-family: var(--sans); color: var(--text); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+header { background: var(--white); border-bottom: 1px solid var(--border); padding: 12px var(--pad-card);
+  display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: var(--gap-card);
+  position: sticky; top: 0; z-index: 100; }
+.h-brand { display: flex; align-items: center; gap: 12px; justify-self: start; min-width: 0; }
+.h-logo { justify-self: center; display: flex; align-items: center; }
+.h-logo img { height: 24px; width: auto; display: block; transform: translateY(-1.5px); }
+.h-title { font-family: var(--sans); font-size: var(--fs-header-bar); font-weight: 700; color: var(--text); letter-spacing: .02em; line-height: 1; white-space: nowrap; }
+.h-today { font-family: var(--serif); font-size: 15px; font-weight: 700; letter-spacing: .04em; color: var(--text); justify-self: end; }
+
+.wrap { max-width: 1060px; margin: 0 auto; padding: 28px 24px 64px; }
+
+/* === 12カラムグリッド基盤 === */
+.grid12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--gap-card); }
+.col-3  { grid-column: span 3; }
+.col-4  { grid-column: span 4; }
+.col-6  { grid-column: span 6; }
+.col-12 { grid-column: span 12; }
+
+/* セクション間マージン統一 */
+.section-block { margin-bottom: var(--gap-section); }
+
+/* ── 親グループ外枠コンテナ（情報収集セクション内：内部にタイトル＋2カード） ── */
+.group-box {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+.group-box-title {
+  font-family: var(--serif);
+  font-size: var(--fs-card-title);
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  padding: 4px 0 6px;
+  line-height: 1.4;
+}
+.group-box-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap-card);
+}
+
+/* ── カード共通スタイル（.panel と .mkt-card / .dm-col / .noslaughter-panel 共通の基底） ── */
+.panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-card);
+  padding: var(--pad-card-y) var(--pad-card); min-height: 130px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: 10px; transition: border-color .15s, background .15s;
+  text-decoration: none; color: var(--text); box-sizing: border-box; position: relative; }
+.panel-title { font-family: var(--serif); font-size: var(--fs-card-title); font-weight: 700; color: var(--text); line-height: 1.4; }
+.panel-sub { font-size: var(--fs-meta); color: var(--text2); line-height: 1.6; }
+.panel-sub a { color: var(--text); text-underline-offset: 3px; }
+.panel-step { position: absolute; left: 12px; top: 10px;
+  font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: .08em;
+  color: var(--text); line-height: 1; }
+
+/* クリック可能パネル共通スタイル */
+.panel.is-clickable, .drop-zone { cursor: pointer; }
+.panel.is-clickable:hover, .drop-zone:hover, .drop-zone.drag { border-color: var(--text); background: var(--bg2); }
+.dz-btn { display: inline-flex; align-items: center; justify-content: center;
+  margin-top: 4px; padding: 9px 16px; min-height: 44px; min-width: 180px; white-space: nowrap;
+  background: var(--text); color: var(--white); border: 1px solid var(--text); border-radius: 4px;
+  font-size: 13px; font-weight: 500; font-family: var(--sans); cursor: pointer; }
+.dz-btn:hover { opacity: .8; }
+#fileInput { display: none; }
+
+/* JA全農リンクパネル */
+.jazmf-panel { cursor: pointer; }
+.jazmf-panel:hover { border-color: var(--text); background: var(--bg2); }
+
+/* 全国屠畜頭数 入力パネル */
+.national-box-body { display: flex; align-items: center; gap: 10px; }
+.national-input { width: 110px; padding: 9px 12px; height: 44px;
+  border: 1px solid var(--border2); border-radius: 4px;
+  font-size: 14px; font-family: var(--mono); color: var(--text); background: var(--white);
+  text-align: center; box-sizing: border-box; }
+.national-input:focus { outline: none; border-color: var(--text); }
+.national-unit { font-size: 13px; color: var(--text2); }
+
+.status-bar { font-family: var(--mono); font-size: 11px; color: var(--text2); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.badge { padding: 2px 8px; border-radius: 3px; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+.badge.ok { background: var(--green-bg); color: var(--green); border: 1px solid #b6dfc3; }
+
+.err-box { background: var(--red-bg); border: 1px solid #fca5a5; border-radius: 6px; padding: 14px 18px; margin-bottom: 16px; display: none; }
+.err-box-title { color: var(--red); font-weight: 700; font-size: 14px; margin-bottom: 5px; }
+.err-box-body { font-size: 13px; color: #7f1d1d; line-height: 1.8; }
+
+.tabs-wrap { display: none; margin-bottom: 20px; }
+.tabs-label { font-family: var(--mono); font-size: 9px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+.date-tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+.dt { flex-shrink: 0; min-width: 68px; padding: 7px 14px; min-height: 44px; text-align: center; border-radius: 4px; border: 1px solid var(--border); background: var(--white); color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer; transition: all .12s; }
+.dt:hover { border-color: var(--border2); color: var(--text); }
+.dt.active { background: var(--text); border-color: var(--text); color: var(--white); }
+.dt-dow { display: block; font-size: 13px; font-weight: 700; }
+.dt-md { display: block; font-size: 10px; opacity: .65; margin-top: 2px; font-family: var(--mono); }
+
+.day-panel { display: none; }
+.day-panel.active { display: block; animation: appear .2s ease; }
+@keyframes appear { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* day-meta は grid12 に統合済み、装飾のみ */
+.day-meta { margin-bottom: var(--gap-card); }
+.dm-col { display: flex; flex-direction: column; background: var(--white); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--pad-card-y) var(--pad-card); }
+.dm-label { font-family: var(--mono); font-size: var(--fs-label); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.dm-value { font-family: var(--serif); font-size: var(--fs-card-value); font-weight: 700; color: var(--text); line-height: 1.2; }
+
+/* mkt-grid は grid12 に統合済み */
+.mkt-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden; }
+.mkt-head { padding: 12px var(--pad-card); border-bottom: 1px solid var(--border); background: var(--bg2);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mkt-name { font-family: var(--serif); font-size: var(--fs-card-title); font-weight: 700; }
+.mkt-heads { font-family: var(--serif); font-size: var(--fs-card-title); font-weight: 700; color: var(--text); white-space: nowrap; }
+.mkt-body { padding: var(--pad-card); }
+
+.rep-row { margin-bottom: 16px; }
+.rep-label { font-family: var(--mono); font-size: var(--fs-label); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.rep-line { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.rep-price { font-family: var(--mono); font-size: var(--fs-hero); font-weight: 600; color: var(--text); line-height: 1; }
+.rep-unit { font-family: var(--mono); font-size: var(--fs-meta); color: var(--text2); margin-left: 0; }
+.diff-badge { display: inline-flex; align-items: center; margin-left: 8px; font-family: var(--mono); font-size: 28px; font-weight: 600; padding: 4px 10px; border-radius: 4px; line-height: 1; }
+.diff-badge.up { background: var(--green-bg); color: var(--green); }
+.diff-badge.dn { background: var(--red-bg); color: var(--red); }
+.diff-badge.fl { background: var(--bg2); color: var(--text2); }
+
+.gt { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+.gt th { font-family: var(--mono); font-size: var(--fs-label); font-weight: 500; letter-spacing: .08em; color: var(--text3); padding: 0 4px 6px; border-bottom: 1px solid var(--border); text-align: right; }
+.gt th:first-child { text-align: left; }
+.gt td { font-size: var(--fs-body); padding: 6px 4px; border-bottom: 1px solid var(--bg2); text-align: right; }
+.gt tr:last-child td { border-bottom: none; }
+.gn { text-align: left !important; font-weight: 700; font-size: var(--fs-body); color: var(--text); }
+.gn.nami { color: var(--text2); font-weight: 500; }
+.gp { font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--text); }
+.gp.na { color: var(--text3); font-size: var(--fs-body); font-weight: 400; }
+.gp.nami { color: var(--text2); }
+/* 「中」行の強調 */
+.gt tr.row-naka { background: #ebebe7; }
+.gt tr.row-naka .gn { font-weight: 700; }
+.gt tr.row-naka .gp { font-weight: 700; font-size: 16px; }
+
+.notice { font-family: var(--mono); font-size: 10px; color: var(--text3); text-align: center; padding: 16px; border-top: 1px solid var(--border); margin-top: 36px; display: none; }
+
+@media (max-width: 1024px) {
+  /* タブレット */
+  .collect-row { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mkt-grid { grid-template-columns: 1fr; }
+  .section-label { font-size: 15px; }
+  .wrap { padding: 20px 16px 48px; }
+  .day-meta { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 780px) {
+  /* スマートフォン */
+  .collect-row { grid-template-columns: 1fr; gap: 10px; }
+  .mkt-grid { grid-template-columns: 1fr; }
+  .section-label { font-size: 13px; margin: 16px 0 8px; }
+  header { padding: 12px 16px; }
+  .h-today { font-size: 11px; white-space: nowrap; }
+  .h-title { font-size: 16px; }
+  .wrap { padding: 14px 12px 40px; }
+  .rep-price { font-size: 32px; }
+  .diff-badge { font-size: 22px; }
+  .panel { padding: 18px 14px; min-height: 140px; }
+  .national-input { width: 100%; box-sizing: border-box; }
+  .day-meta { grid-template-columns: 1fr; gap: 8px; }
+  .action-bar { grid-template-columns: 1fr; }
+  .slack-box { width: 94vw; padding: 18px; }
+  .mkt-card { margin-bottom: 12px; }
+  .gt td, .gt th { font-size: 13px; padding: 4px 6px; }
+  .rep-price { font-size: 28px; }
+  .diff-badge { font-size: 20px; }
+  /* グループ外枠：スマホでは縦積み + 内側カードも縦積み */
+  .group-box { grid-column: 1 / -1; padding: 12px; }
+  .group-box-inner { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 400px) {
+  /* 小型スマートフォン */
+  .section-label { font-size: 11px; }
+}
+
+/* ── アクションバー（旧action-barはgrid12に統合） ── */
+.action-bar { margin-top: 0; }
+
+/* 屠畜あり：初期は非表示（特異性を上げて確実に上書き） */
+.noslaughter-panel.action-left { display: none; }
+.noslaughter-panel.action-left.show { display: flex; }
+
+/* 屠畜なし：初期は左端、屠畜ありがshow時は右端へ */
+.action-right { grid-column: 1 / span 6; }
+#actionBar.has-data .action-right { grid-column: 7 / span 6; }
+
+/* セクションラベル */
+.section-label { font-family:'Inter','Noto Sans JP',sans-serif; font-size:21px; font-weight:700; letter-spacing:-.01em;
+  color:#111110; margin:28px 0 12px; padding-bottom:8px;
+  border-bottom:2px solid #111110; }
+
+/* 情報収集エリア（旧collect-row は grid12 に統合済み） */
+
+/* 屠畜あり/なしパネル */
+.noslaughter-panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--r-card);
+  padding: var(--pad-card-y) var(--pad-card); box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 10px;
+  min-height: 160px; justify-content: flex-start; }
+.noslaughter-panel .panel-title { line-height: 1.4; }
+.noslaughter-controls { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap-card); margin-top: auto; width: 100%; }
+.noslaughter-date { padding: 9px 12px; height: 44px; width: 100%;
+  border: 1px solid var(--border2); border-radius: 4px;
+  font-size: var(--fs-body); font-family: var(--mono); color: var(--text); background: var(--white);
+  box-sizing: border-box; }
+.noslaughter-date:focus { outline: none; border-color: var(--text); }
+.btn-noslaughter { padding: 9px 18px; height: 44px; width: 100%;
+  background: var(--text); color: var(--white); border: 1px solid var(--text); border-radius: 4px;
+  font-size: var(--fs-body); font-weight: 500; cursor: pointer; font-family: var(--sans);
+  transition: opacity .15s; box-sizing: border-box; }
+.btn-noslaughter:hover { opacity: .8; }
+
+/* Slackメッセージモーダル */
+.slack-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center; }
+.slack-modal.open { display: flex; }
+.slack-box { background: var(--white); border-radius: 8px; padding: 24px; width: 480px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,.15); }
+.slack-box-title { font-family: var(--serif); font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+.slack-text { font-family: var(--sans); font-size: 14px; line-height: 1.9; background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; padding: 14px 16px; white-space: pre-wrap; margin-bottom: 14px; color: var(--text); }
+.slack-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-copy { padding: 8px 18px; background: var(--text); color: var(--white); border: none; border-radius: 4px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.btn-close { padding: 8px 18px; background: var(--white); color: var(--text); border: 1px solid var(--border2); border-radius: 4px; font-size: 13px; cursor: pointer; }
+.copy-ok { color: var(--green); font-family: var(--mono); font-size: 11px; display: none; }
+
+/* PDF印刷用スタイル */
+@media print {
+  @page { size: A4 landscape; margin: 10mm 12mm; }
+  body { background: white !important; font-size: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  header, .drop-zone, .status-bar, .tabs-wrap, .action-bar, .notice, .empty, .err-box { display: none !important; }
+  .wrap { padding: 0; max-width: 100%; }
+
+  /* タイトル */
+  .print-title { display: block !important; font-family: 'Noto Serif JP', serif; font-size: 15px; font-weight: 700; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid #111110; letter-spacing: .04em; }
+
+  /* 表示中のパネルのみ印刷 */
+  .day-panel { display: none !important; }
+  .day-panel.active { display: block !important; }
+
+  /* 日付バー */
+  .day-meta { padding: 6px 12px; margin-bottom: 8px; border: 1px solid #ddd; border-radius: 4px; }
+  .dm-label { font-size: 8px; margin-bottom: 2px; }
+  .dm-value { font-family: 'Noto Serif JP', serif; font-size: 14px; font-weight: 700; }
+
+  /* 市場カードグリッド */
+  .mkt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mkt-card { border: 1px solid #ddd; border-radius: 4px; overflow: hidden; break-inside: avoid; }
+  .mkt-head { padding: 7px 12px 6px; background: #f0f0ed !important; border-bottom: 1px solid #ddd; }
+  .mkt-name { font-family: 'Noto Serif JP', serif; font-size: 13px; font-weight: 700; }
+  .mkt-fac { font-size: 8px; margin-top: 1px; }
+  .mkt-body { padding: 10px 12px; }
+
+  /* 代表相場 */
+  .rep-row { margin-bottom: 10px; }
+  .rep-label { font-size: 8px; margin-bottom: 3px; }
+  .rep-price { font-size: 32px; font-weight: 700; }
+  .rep-unit { font-size: 10px; }
+  .diff-badge { font-size: 10px; padding: 1px 5px; }
+  .diff-badge.up { background: #edf7f0 !important; color: #1a7a3a !important; }
+  .diff-badge.dn { background: #fef2f2 !important; color: #b91c1c !important; }
+  .diff-badge.fl { background: #f0f0ed !important; color: #6b6b66 !important; }
+
+  /* 等級テーブル */
+  .gt { margin-bottom: 8px; }
+  .gt th { font-size: 8px; padding: 0 3px 4px; border-bottom: 1px solid #ddd; }
+  .gt td { font-size: 11px; padding: 4px 3px; border-bottom: 1px solid #f0f0ed; }
+  .gt tr:last-child td { border-bottom: none; }
+  .gn { font-size: 11px; font-weight: 700; }
+  .gp { font-size: 13px; font-weight: 600; }
+  .gp.na { font-size: 11px; }
+
+  /* 頭数 */
+  .heads-row { padding-top: 7px; border-top: 1px solid #ddd; }
+  .heads-label { font-size: 8px; }
+  .heads-val { font-size: 13px; font-weight: 600; }
+}
+.print-title { display: none; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-brand">
+    <div class="h-title">豚枝肉 相場</div>
+  </div>
+  <div class="h-logo"><img src="data:image/png;base64,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" alt="SAIBOKU"></div>
+  <div class="h-today" id="hToday"></div>
+</header>
+
+<div class="wrap">
+
+  <!-- ① 情報の収集エリア -->
+  <div class="section-block">
+  <div class="section-label">1：情報収集</div>
+  <div class="grid12">
+
+    <!-- 外枠1：JMMA -->
+    <div class="group-box col-6">
+      <div class="group-box-title">1. 日本食肉市場卸売協会</div>
+      <div class="group-box-inner">
+
+        <!-- 1/4：JMMA 三市場平均 -->
+        <div class="panel is-clickable" onclick="window.open('https://mmb.jmma.or.jp/report/pork_price_list/', '_blank')">
+          <div class="panel-sub">三市場平均の確認とダウンロード</div>
+          <div class="dz-btn">クリック</div>
+          <div class="panel-step">Step 1</div>
+        </div>
+
+        <!-- 2/4：JMMA ファイル読み込み -->
+        <div class="panel drop-zone" id="dropZone"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="this.classList.remove('drag');event.preventDefault();handleFile(event.dataTransfer.files[0])"
+          onclick="document.getElementById('fileInput').click()">
+          <div class="panel-sub">ファイルをアップロード</div>
+          <div class="dz-btn">選択 or ドロップ</div>
+          <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0]);this.value=''">
+          <div class="panel-step">Step 2</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 外枠2：JA全農ミートフーズ -->
+    <div class="group-box col-6">
+      <div class="group-box-title">2. JA全農ミートフーズ</div>
+      <div class="group-box-inner">
+
+        <!-- 3/4：JA全農 ボタン -->
+        <div class="panel is-clickable" onclick="window.open('https://www.jazmf.co.jp/market/', '_blank')">
+          <div class="panel-sub">全国屠畜頭数の確認</div>
+          <div class="dz-btn">クリック</div>
+          <div class="panel-step">Step 3</div>
+        </div>
+
+        <!-- 4/4：JA全農 頭数入力 -->
+        <div class="panel national-box" id="nationalBox">
+          <div class="panel-sub">頭数を入力</div>
+          <div class="national-box-body">
+            <input type="text" id="nationalHeadsInput" class="national-input"
+                   placeholder="例：67,500" inputmode="numeric" pattern="[0-9]*"
+                   oninput="onNationalInput(this.value)">
+            <span class="national-unit">頭</span>
+          </div>
+          <div class="panel-step">Step 4</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /grid12 -->
+  </div><!-- /section-block -->
+
+  <div class="err-box" id="errBox">
+    <div class="err-box-title">読み込みエラー</div>
+    <div class="err-box-body" id="errMsg"></div>
+  </div>
+
+  <div class="section-block" id="sectionDetailBlock">
+  <div class="section-label" id="sectionDetail" style="display:none">2：概要</div>
+  <div id="tabsWrap" style="display:none"><div id="dateTabs"></div></div>
+
+  <div id="dayPanels"></div>
+  </div>
+
+
+  <!-- アクションバー -->
+  <div class="section-block">
+  <div class="section-label" id="sectionOutput">3：出力</div>
+  <div class="grid12" id="actionBar">
+    <div class="noslaughter-panel action-left col-6" id="actionLeft">
+      <div class="panel-title">屠畜があった日</div>
+      <div class="panel-sub">相場の共有</div>
+      <div class="noslaughter-controls">
+        <button class="btn-noslaughter" onclick="printPDF()">PDF出力（A4横）</button>
+        <button class="btn-noslaughter" onclick="openSlack()">Slackメッセージ作成</button>
+      </div>
+    </div>
+    <div class="noslaughter-panel action-right col-6" id="actionRight">
+      <div class="panel-title">屠畜がなかった日</div>
+      <div class="panel-sub">日付を選んで作成</div>
+      <div class="noslaughter-controls">
+        <input type="date" id="noSlaughterDate" class="noslaughter-date">
+        <button class="btn-noslaughter" onclick="openSlackNoSlaughter()">Slackメッセージ作成</button>
+      </div>
+    </div>
+  </div>
+  </div><!-- /section-block -->
+
+  <!-- Slackモーダル -->
+  <div class="slack-modal" id="slackModal" onclick="if(event.target===this)closeSlack()">
+    <div class="slack-box">
+      <div class="slack-box-title">Slackメッセージ　<span style="font-size:13px;font-weight:400;color:#888;">投稿先：#002-info-2-枝肉相場一覧</span></div>
+      <div class="slack-text" id="slackText"></div>
+      <div class="slack-actions">
+        <span class="copy-ok" id="copyOk">コピーしました</span>
+        <button class="btn-close" onclick="closeSlack()">閉じる</button>
+        <button class="btn-copy" onclick="copySlack()">コピー</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PDF用タイトル（印刷時のみ表示） -->
+  <div class="print-title" id="printTitle"></div>
+
+  <div class="notice" id="notice">※ 表示データはJMMA公表値（消費税込み・円/kg）です。取引の際は各市場の公式情報をご確認ください。</div>
+
+</div>
+
+<script>
+/* ================================================================
+   定数
+================================================================ */
+var TARGET = ['東京', '仙台', 'さいたま'];
+var FAC = {
+  '東京':   '東京都中央卸売市場食肉市場',
+  '仙台':   '仙台市食肉市場',
+  'さいたま': 'さいたま食肉市場'
+};
+var GRADES = ['極上', '上', '中', '並', '等外'];
+var GLBL   = { '極上': '極上', '上': '上', '中': '中', '並': '並', '等外': '等外' };
+var DAYS   = ['日', '月', '火', '水', '木', '金', '土'];
+
+/* 今日の日付をヘッダーに */
+(function () {
+  var d = new Date();
+  var el = document.getElementById('hToday');
+  if (el) el.textContent = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日（' + DAYS[d.getDay()] + '）';
+
+  /* 屠畜なし日付ピッカーの初期値を今日に */
+  var nsEl = document.getElementById('noSlaughterDate');
+  if (nsEl) {
+    var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+    nsEl.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+}());
+
+/* ================================================================
+   ファイル受付
+================================================================ */
+function handleFile(file) {
+  if (!file) return;
+  clearError();
+  var n = file.name.toLowerCase();
+  if (n.slice(-5) === '.xlsx' || n.slice(-4) === '.xls') {
+    readExcel(file);
+  } else if (n.slice(-4) === '.csv') {
+    readCSV(file);
+  } else {
+    showError('ExcelまたはCSVファイルを選択してください（.xlsx / .csv）');
+  }
+}
+
+/* ================================================================
+   Excel読み込み（JSZip + XML正規表現パース）
+================================================================ */
+function readExcel(file) {
+  var reader = new FileReader();
+  reader.onerror = function () { showError('ファイルの読み込みに失敗しました。'); };
+  reader.onload = function (e) {
+    JSZip.loadAsync(e.target.result).then(function (zip) {
+      return processZip(zip, file.name);
+    }).catch(function (err) {
+      showError('Excelの解析に失敗しました：' + err.message);
+      console.error(err);
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function processZip(zip, filename) {
+  /* sharedStrings */
+  var ssFile = zip.file('xl/sharedStrings.xml');
+  var ssPromise = ssFile
+    ? ssFile.async('string').then(parseSharedStrings)
+    : Promise.resolve([]);
+
+  /* workbook + rels */
+  var wbPromise   = zip.file('xl/workbook.xml').async('string');
+  var relsPromise = zip.file('xl/_rels/workbook.xml.rels').async('string');
+
+  return Promise.all([ssPromise, wbPromise, relsPromise]).then(function (res) {
+    var shared  = res[0];
+    var wbXml   = res[1];
+    var relsXml = res[2];
+    var path    = resolveSheetPath(wbXml, relsXml);
+    return zip.file(path).async('string').then(function (shXml) {
+      var rows = parseSheet(shXml, shared);
+      parseRows(rows, filename);
+    });
+  });
+}
+
+function parseSharedStrings(xml) {
+  var shared = [];
+  var siRe = /<si>([\s\S]*?)<\/si>/g;
+  var tRe  = /<t(?:\s[^>]*)?>([^<]*)<\/t>/g;
+  var sm;
+  while ((sm = siRe.exec(xml)) !== null) {
+    var text = '', tm;
+    tRe.lastIndex = 0;
+    while ((tm = tRe.exec(sm[1])) !== null) text += tm[1];
+    shared.push(text);
+  }
+  return shared;
+}
+
+function resolveSheetPath(wbXml, relsXml) {
+  var defaultPath = 'xl/worksheets/sheet1.xml';
+  var sheets = [];
+
+  /* name が先、r:id が後 */
+  var re1 = /<sheet\s[^>]*name="([^"]*)"[^>]*r:id="([^"]*)"/g;
+  var m;
+  while ((m = re1.exec(wbXml)) !== null) sheets.push({ name: m[1], rId: m[2] });
+
+  /* r:id が先、name が後 */
+  if (sheets.length === 0) {
+    var re2 = /<sheet\s[^>]*r:id="([^"]*)"[^>]*name="([^"]*)"/g;
+    while ((m = re2.exec(wbXml)) !== null) sheets.push({ name: m[2], rId: m[1] });
+  }
+
+  if (sheets.length === 0) return defaultPath;
+
+  /* 「食肉市況」を優先 */
+  var target = null;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].name.indexOf('市況') !== -1) { target = sheets[i]; break; }
+  }
+  if (!target) target = sheets[0];
+
+  /* rels から Target を取得（Id と Target の順序不問） */
+  var rId = target.rId;
+  var relM = relsXml.match(new RegExp('Id="' + rId + '"[^>]*Target="([^"]*)"'));
+  if (!relM) relM = relsXml.match(new RegExp('Target="([^"]*)"[^>]*Id="' + rId + '"'));
+  if (!relM) return defaultPath;
+
+  var t = relM[1].replace(/^\//, '');
+  return (t.indexOf('xl/') === 0) ? t : 'xl/' + t;
+}
+
+function parseSheet(xml, shared) {
+  function colToIdx(col) {
+    var n = 0;
+    for (var i = 0; i < col.length; i++) n = n * 26 + (col.charCodeAt(i) - 64);
+    return n - 1;
+  }
+  function splitRef(ref) {
+    var col = '', row = '';
+    for (var i = 0; i < ref.length; i++) {
+      if (ref.charCodeAt(i) >= 65) col += ref[i]; else row += ref[i];
+    }
+    return { ci: colToIdx(col), ri: parseInt(row, 10) };
+  }
+
+  var rowMap = {}, maxCol = 0;
+  /* <c r="A1" t="s"><v>0</v></c> などを抽出 */
+  var cRe = /<c\s([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+  var cm;
+  while ((cm = cRe.exec(xml)) !== null) {
+    var attrs = cm[1], inner = cm[2] || '';
+    var rM = attrs.match(/\br="([A-Z]+\d+)"/);
+    if (!rM) continue;
+    var pos = splitRef(rM[1]);
+    if (pos.ci > maxCol) maxCol = pos.ci;
+
+    var tM = attrs.match(/\bt="([^"]+)"/);
+    var cellType = tM ? tM[1] : '';
+    var vM = inner.match(/<v>([^<]*)<\/v>/);
+    var val = null;
+    if (vM) {
+      var raw = vM[1].trim();
+      if (cellType === 's') {
+        val = shared[parseInt(raw, 10)];
+        if (val === undefined) val = null;
+      } else {
+        var f = parseFloat(raw);
+        val = isNaN(f) ? (raw || null) : f;
+      }
+    }
+    if (val === '') val = null;
+
+    if (!rowMap[pos.ri]) rowMap[pos.ri] = {};
+    rowMap[pos.ri][pos.ci] = val;
+  }
+
+  var rowNums = Object.keys(rowMap).map(Number).sort(function (a, b) { return a - b; });
+  return rowNums.map(function (rn) {
+    var row = [];
+    for (var ci = 0; ci <= maxCol; ci++) {
+      row.push(rowMap[rn][ci] !== undefined ? rowMap[rn][ci] : null);
+    }
+    return row;
+  });
+}
+
+/* ================================================================
+   CSV読み込み（Shift-JIS）
+================================================================ */
+function readCSV(file) {
+  var reader = new FileReader();
+  reader.onerror = function () { showError('CSVの読み込みに失敗しました。'); };
+  reader.onload = function (e) {
+    var lines = e.target.result.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    var rows = lines.map(function (line) {
+      var cells = [], cur = '', inQ = false;
+      for (var i = 0; i < line.length; i++) {
+        var ch = line[i];
+        if (ch === '"') { inQ = !inQ; }
+        else if (ch === ',' && !inQ) { cells.push(toNum(cur)); cur = ''; }
+        else { cur += ch; }
+      }
+      cells.push(toNum(cur));
+      return cells;
+    });
+    parseRows(rows, file.name);
+  };
+  reader.readAsText(file, 'Shift_JIS');
+}
+function toNum(s) {
+  s = s.trim();
+  if (!s) return null;
+  var n = parseFloat(s.replace(/,/g, ''));
+  return isNaN(n) ? s : n;
+}
+
+/* ================================================================
+   共通パーサー
+================================================================ */
+function toISO(text) {
+  var m;
+  m = text.match(/令和\s*(\d+)\s*年\s*(\d+)\s*月\s*(\d+)\s*日/);
+  if (m) return (2018 + +m[1]) + '-' + pad2(m[2]) + '-' + pad2(m[3]);
+  m = text.match(/平成\s*(\d+)\s*年\s*(\d+)\s*月\s*(\d+)\s*日/);
+  if (m) return (1988 + +m[1]) + '-' + pad2(m[2]) + '-' + pad2(m[3]);
+  return null;
+}
+function pad2(s) { return ('0' + s).slice(-2); }
+function toFloat(v) {
+  if (v === null || v === undefined || v === '') return null;
+  var n = parseFloat(String(v).replace(/,/g, ''));
+  return isNaN(n) ? null : n;
+}
+
+function parseRows(rows, filename) {
+  var allDays = {}, currentDate = null, headerFound = false;
+  var col = { name: 0, heads: 1, geki: 2, ue: 3, diff: 4, naka: 5, nami: 6, tougai: 7 };
+
+  for (var ri = 0; ri < rows.length; ri++) {
+    var row = rows[ri];
+    if (!row || row.length === 0) continue;
+
+    var strs = row.map(function (c) { return (c === null || c === undefined) ? '' : String(c).trim(); });
+    var joined = strs.join(' ');
+
+    /* 日付行 */
+    var iso = toISO(joined);
+    if (iso) {
+      currentDate = iso;
+      if (!allDays[iso]) allDays[iso] = { date: iso, markets: {} };
+      continue;
+    }
+
+    /* ヘッダー行 */
+    if (strs.indexOf('市場名') !== -1) {
+      col = {};
+      for (var si = 0; si < strs.length; si++) {
+        var s = strs[si];
+        if (s === '市場名')            col.name   = si;
+        if (s === '取引頭数')          col.heads  = si;
+        if (s === '極上')              col.geki   = si;
+        if (s === '上')                col.ue     = si;
+        if (s.indexOf('前日差') !== -1) col.diff  = si;
+        if (s === '中')                col.naka   = si;
+        if (s === '並')                col.nami   = si;
+        if (s === '等外')              col.tougai = si;
+      }
+      headerFound = true;
+      continue;
+    }
+
+    if (!currentDate || !headerFound) continue;
+
+    var mktName = strs[col.name] || '';
+    if (!mktName) continue;
+
+    // 全市場の頭数を全国合計に加算
+    var natH = toFloat(row[col.heads]);
+    if (natH !== null) {
+      if (!allDays[currentDate].national_heads) allDays[currentDate].national_heads = 0;
+      allDays[currentDate].national_heads += natH;
+    }
+
+    if (TARGET.indexOf(mktName) === -1) continue;
+
+    allDays[currentDate].markets[mktName] = {
+      total_heads: toFloat(row[col.heads]),
+      prev_diff:   toFloat(row[col.diff]),
+      grades: {
+        '極上': { price: toFloat(row[col.geki])   },
+        '上':   { price: toFloat(row[col.ue])     },
+        '中':   { price: toFloat(row[col.naka])   },
+        '並':   { price: toFloat(row[col.nami])   },
+        '等外': { price: toFloat(row[col.tougai]) }
+      }
+    };
+  }
+
+  var dates = Object.keys(allDays).sort();
+  if (dates.length === 0) {
+    showError('東京・仙台・さいたまのデータが見つかりませんでした。JMMAの「豚枝肉 頭数・価格（市場一覧）」のファイルをご確認ください。');
+    return;
+  }
+  renderAll(allDays, dates, filename);
+}
+
+/* ================================================================
+   描画
+================================================================ */
+function renderAll(allDays, dates, filename) {
+  var es = document.getElementById('emptyState');
+  if (es) es.style.display = 'none';
+  document.getElementById('notice').style.display     = 'block';
+  window._allDays = allDays;  // PDF生成用にキャッシュ
+
+  var totalAll = 0, maxP = null, minP = null, maxInfo = '', minInfo = '', maxGrade = '', maxMkt = '', minMkt = '';
+  for (var di = 0; di < dates.length; di++) {
+    var d = dates[di];
+    for (var ti = 0; ti < TARGET.length; ti++) {
+      var mkt = TARGET[ti];
+      var m = allDays[d].markets[mkt];
+      if (!m) continue;
+      totalAll += m.total_heads || 0;
+      for (var gi = 0; gi < GRADES.length; gi++) {
+        var p = m.grades[GRADES[gi]].price;
+        if (p !== null && (maxP === null || p > maxP)) { maxP = p; maxGrade = GRADES[gi]; maxMkt = mkt; maxInfo = mkt; }
+      }
+      var np = m.grades['並'].price;
+      if (np !== null && (minP === null || np < minP)) { minP = np; minMkt = mkt; minInfo = mkt; }
+    }
+  }
+
+  var d0 = new Date(dates[0] + 'T00:00:00');
+  var dn = new Date(dates[dates.length - 1] + 'T00:00:00');
+  // 「2：概要」セクションは削除済みのため、関連要素への代入はスキップ
+  var d0dt = new Date(dates[0]+'T00:00:00'); var dndt = new Date(dates[dates.length-1]+'T00:00:00');
+  // PDF・Slack用にサマリーデータをキャッシュ
+  var periodStr = dates.length === 1 ? fmtJP(dates[0]) :
+    (new Date(dates[0]+'T00:00:00').getMonth()+1) + '/' + new Date(dates[0]+'T00:00:00').getDate()
+    + ' 〜 ' + (new Date(dates[dates.length-1]+'T00:00:00').getMonth()+1) + '/' + new Date(dates[dates.length-1]+'T00:00:00').getDate();
+  window._summaryData = {
+    maxP: maxP, maxGrade: maxGrade, maxMkt: maxMkt, maxInfo: maxInfo,
+    minP: minP, minMkt: minMkt, minInfo: minInfo,
+    totalAll: totalAll,
+    periodStr: periodStr,
+    daysCount: dates.length
+  };
+  var sl3 = document.getElementById('sectionDetail');
+  if (sl3) sl3.style.display = '';
+
+  var tabsWrap = document.getElementById('tabsWrap');
+  var tabsEl   = document.getElementById('dateTabs');
+  var panelsEl = document.getElementById('dayPanels');
+  tabsEl.innerHTML = '';
+  panelsEl.innerHTML = '';
+  // tabs replaced by section-label
+  document.getElementById('actionLeft').classList.add('show');
+  document.getElementById('actionBar').classList.add('has-data');
+
+  for (var di2 = 0; di2 < dates.length; di2++) {
+    (function (d, i) {
+      var dt  = new Date(d + 'T00:00:00');
+      var tab = document.createElement('button');
+      tab.className = 'dt' + (i === 0 ? ' active' : '');
+      tab.id = 'tab_' + d;
+      tab.innerHTML =
+        '<span class="dt-dow">（' + DAYS[dt.getDay()] + '）</span>' +
+        '<span class="dt-md">' + (dt.getMonth() + 1) + '/' + dt.getDate() + '</span>';
+      tab.onclick = function () { switchDate(d); };
+      tabsEl.appendChild(tab);
+
+      var panel = document.createElement('div');
+      panel.className = 'day-panel' + (i === 0 ? ' active' : '');
+      panel.id = 'panel_' + d;
+      panel.innerHTML = buildDay(d, allDays[d]);
+      panelsEl.appendChild(panel);
+    }(dates[di2], di2));
+  }
+  // 最初の日付をセット
+  updatePrintMeta(dates[0]);
+}
+
+function switchDate(d) {
+  var tabs   = document.querySelectorAll('.dt');
+  var panels = document.querySelectorAll('.day-panel');
+  for (var i = 0; i < tabs.length; i++)   tabs[i].classList.remove('active');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+  var tab   = document.getElementById('tab_'   + d);
+  var panel = document.getElementById('panel_' + d);
+  if (tab)   tab.classList.add('active');
+  if (panel) panel.classList.add('active');
+  updatePrintMeta(d);
+}
+
+function updatePrintMeta(d) {
+  currentDisplayDate = d;
+  var dt = new Date(d + 'T00:00:00');
+  var ymd = dt.getFullYear() + pad2s(dt.getMonth()+1) + pad2s(dt.getDate());
+  var el = document.getElementById('printTitle');
+  if (el) el.textContent = ymd + '  枝肉相場';
+
+  // 全国屠畜頭数を更新
+  var natEl  = document.getElementById('tcNational');
+  var natSub = document.getElementById('tcNationalSub');
+  if (natEl && window._allDays && window._allDays[d]) {
+    var nat = window._allDays[d].national_heads;
+    natEl.textContent  = nat !== null && nat !== undefined ? Math.round(nat).toLocaleString() : '---';
+    if (natSub) natSub.textContent = '頭（' + (dt.getMonth()+1) + '/' + dt.getDate() + '）';
+  }
+}
+
+function buildDay(dateStr, day) {
+  var dt = new Date(dateStr + 'T00:00:00');
+  var jpDate = dt.getFullYear() + '年' + (dt.getMonth() + 1) + '月' + dt.getDate() + '日（' + DAYS[dt.getDay()] + '）';
+  var natTotal = 0;
+  for (var ti = 0; ti < TARGET.length; ti++) {
+    var mm = day.markets[TARGET[ti]];
+    if (mm) natTotal += mm.total_heads || 0;
+  }
+
+  var cards = '';
+  for (var ti = 0; ti < TARGET.length; ti++) {
+    var mkt = TARGET[ti];
+    var m = day.markets[mkt];
+    if (!m) {
+      cards += '<div class="mkt-card col-4">' +
+        '<div class="mkt-head"><div class="mkt-name">' + FAC[mkt] + '</div></div>' +
+        '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;font-family:var(--mono)">この日のデータなし</div>' +
+        '</div>';
+      continue;
+    }
+
+    var diff = '';
+    if (m.prev_diff !== null) {
+      var cls  = m.prev_diff > 0 ? 'up' : m.prev_diff < 0 ? 'dn' : 'fl';
+      var icon = m.prev_diff > 0 ? '▲' : m.prev_diff < 0 ? '▼' : '→';
+      var sign = m.prev_diff > 0 ? '+' : '';
+      diff = '<span class="diff-badge ' + cls + '">' + icon + ' ' + sign + m.prev_diff + '</span>';
+    }
+
+    var rep    = m.grades['中'].price !== null ? m.grades['中'].price : m.grades['上'].price;
+    var repStr = rep !== null ? rep.toFixed(0) : '---';
+
+    var trs = '';
+    for (var gi = 0; gi < GRADES.length; gi++) {
+      var g  = GRADES[gi];
+      var p  = m.grades[g].price;
+      var gnC = g === '並' ? 'gn nami' : 'gn';
+      var gpC = p !== null ? (g === '並' ? 'gp nami' : 'gp') : 'gp na';
+      var rowC = g === '中' ? ' class="row-naka"' : '';
+      trs += '<tr' + rowC + '><td class="' + gnC + '">' + GLBL[g] + '</td><td class="' + gpC + '">' + (p !== null ? p.toFixed(0) : '—') + '</td></tr>';
+    }
+
+    var headsStr = m.total_heads !== null ? Math.round(m.total_heads).toLocaleString() : '---';
+
+    cards +=
+      '<div class="mkt-card col-4">' +
+        '<div class="mkt-head">' +
+          '<div class="mkt-name">' + FAC[mkt] + '</div>' +
+          '<div class="mkt-heads">' + headsStr + ' 頭</div>' +
+        '</div>' +
+        '<div class="mkt-body">' +
+          '<div class="rep-row">' +
+            '<div class="rep-label">「中」相場（前日差）</div>' +
+            '<div class="rep-line">' +
+              '<span class="rep-price">' + repStr + '</span>' +
+              '<span class="rep-unit">円/kg</span>' + diff +
+            '</div>' +
+          '</div>' +
+          '<table class="gt">' +
+            '<thead><tr><th>等級</th><th>相場（円/kg）</th></tr></thead>' +
+            '<tbody>' + trs + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>';
+  }
+
+  return '<div class="grid12 day-meta">' +
+      '<div class="dm-col col-4"><div class="dm-label">取引日</div><div class="dm-value">' + jpDate + '</div></div>' +
+      '<div class="dm-col col-4"><div class="dm-label">3市場合計 取引頭数</div>' +
+        '<div class="dm-value">' + Math.round(natTotal).toLocaleString() + ' 頭</div>' +
+      '</div>' +
+      '<div class="dm-col col-4"><div class="dm-label">全国屠畜頭数</div>' +
+        '<div class="dm-value"><span id="dmNational_' + dateStr + '">' +
+          (_manualNationalHeads !== null ? _manualNationalHeads.toLocaleString() : '—') +
+        '</span> 頭</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="grid12 mkt-grid">' + cards + '</div>';
+}
+
+function fmtJP(d) {
+  var dt = new Date(d + 'T00:00:00');
+  return dt.getFullYear() + '年' + (dt.getMonth() + 1) + '月' + dt.getDate() + '日';
+}
+
+
+/* ── PDF出力 ── */
+/* ── 全国屠畜頭数 入力ハンドラ ── */
+var _manualNationalHeads = null;
+
+function onNationalInput(val) {
+  // 全角数字を半角に変換
+  if (val && typeof val === 'string') {
+    val = val.replace(/[０-９]/g, function(s) {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    }).replace(/[^0-9]/g, ''); // 数字以外も除去
+    // 入力欄に変換後の値を反映
+    var inputEl = document.getElementById('nationalHeadsInput');
+    if (inputEl && inputEl.value !== val) inputEl.value = val;
+  }
+  var n = parseInt(val, 10);
+  _manualNationalHeads = (!val || isNaN(n) || n < 0) ? null : n;
+  var displayStr = _manualNationalHeads !== null ? _manualNationalHeads.toLocaleString() : '—';
+
+  // 2：概要 カードを更新
+  var el  = document.getElementById('tcNational');
+  var sub = document.getElementById('tcNationalSub');
+  if (el) {
+    if (_manualNationalHeads !== null) {
+      el.textContent = displayStr;
+      if (sub) sub.textContent = '頭';
+    } else if (currentDisplayDate && window._allDays && window._allDays[currentDisplayDate]) {
+      var nat = window._allDays[currentDisplayDate].national_heads;
+      el.textContent = nat ? Math.round(nat).toLocaleString() : '—';
+      var dt2 = new Date(currentDisplayDate + 'T00:00:00');
+      if (sub) sub.textContent = '頭（' + (dt2.getMonth()+1) + '/' + dt2.getDate() + '）';
+    } else {
+      el.textContent = '—';
+      if (sub) sub.textContent = '頭';
+    }
+  }
+
+  // 各パネルの全国屠畜頭数を更新
+  if (window._allDays) {
+    var dates = Object.keys(window._allDays);
+    for (var i = 0; i < dates.length; i++) {
+      var dmEl = document.getElementById('dmNational_' + dates[i]);
+      if (dmEl) dmEl.textContent = displayStr;
+    }
+  }
+}
+
+/* ── PDF出力（html2canvas + jsPDF 方式） ── */
+function printPDF() {
+  if (!currentDisplayDate || !window._allDays) return;
+
+  var d   = currentDisplayDate;
+  var dt  = new Date(d + 'T00:00:00');
+  var ymd = dt.getFullYear() + pad2s(dt.getMonth() + 1) + pad2s(dt.getDate());
+
+  var btn  = document.querySelector('button[onclick*="printPDF"]');
+  var orig = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = '生成中...';
+    btn.disabled  = true;
+  }
+
+  // ── PDF用の専用コンテナをDOMに追加（画面外） ──
+  var pdfRoot = document.createElement('div');
+  pdfRoot.id = 'pdfRoot';
+  pdfRoot.style.cssText = [
+    'position:fixed', 'left:-9999px', 'top:0',
+    'width:1123px',   // A4横 96dpi換算（297mm）
+    'height:794px',   // A4横 96dpi換算（210mm）
+    'background:#f7f7f5',
+    'font-family:"Noto Sans JP",sans-serif',
+    'overflow:hidden', 'box-sizing:border-box',
+    'padding:28px 36px 22px 36px'
+  ].join(';');
+
+  // データ取得
+  var day     = window._allDays[d];
+  var DAYS_JP = ['日','月','火','水','木','金','土'];
+  var dow     = DAYS_JP[dt.getDay()];
+  var jpDate  = dt.getFullYear() + '年' + (dt.getMonth()+1) + '月' + dt.getDate() + '日（' + dow + '曜日）';
+  var natTotal = 0;
+  TARGET.forEach(function(mkt) {
+    var m = day.markets[mkt];
+    if (m && m.total_heads) natTotal += m.total_heads;
+  });
+
+  // ── ヘッダー ──
+  var natTotalStr = Math.round(natTotal).toLocaleString();
+  var nationalStr = _manualNationalHeads !== null ? _manualNationalHeads.toLocaleString() : null;
+  var DAYS_JP = ['日','月','火','水','木','金','土'];
+  var pdfDt  = new Date(d + 'T00:00:00');
+  var jpDateStr = pdfDt.getFullYear() + '年'
+    + (pdfDt.getMonth()+1) + '月'
+    + pdfDt.getDate() + '日'
+    + '（' + DAYS_JP[pdfDt.getDay()] + '曜日）';
+  // 2：概要カードと同じ表記でPDFヘッダーを構築
+  var sd = window._summaryData || {};
+  // 取得期間
+  var pdfD0 = new Date(currentDisplayDate + 'T00:00:00');
+  var DAYS_PDF = ['日','月','火','水','木','金','土'];
+  var pdfPeriod = sd.periodStr
+    ? (sd.daysCount === 1
+      ? sd.periodStr + '（' + DAYS_PDF[pdfD0.getDay()] + '）'
+      : sd.periodStr)
+    : '—';
+  var pdfDays   = '';
+  // 期間内 最高相場
+  var pdfHighVal  = (sd.maxP !== null && sd.maxP !== undefined) ? sd.maxP.toFixed(0) : '—';
+  var pdfHighInfo = '円/kg　' + (sd.maxInfo || '');
+  // 期間内 最低相場（並）
+  var pdfLowVal  = (sd.minP !== null && sd.minP !== undefined) ? sd.minP.toFixed(0) : '—';
+  var pdfLowInfo = '円/kg　' + (sd.minInfo || '');
+  // 3市場合計 取引頭数
+  var pdfTotal = (sd.totalAll !== undefined) ? Math.round(sd.totalAll).toLocaleString() : '—';
+  // 全国屠畜頭数
+  var pdfNatVal = (_manualNationalHeads !== null) ? _manualNationalHeads.toLocaleString() : '—';
+  var pdfNatLine = (_manualNationalHeads !== null);
+
+  // カード1行分のHTML（独立カード版・画面の day-meta と同じ構造）
+  function pdfMetaCard(label, value) {
+    return '<div style="background:#fff;border:1px solid #dededa;border-radius:4px;padding:10px 16px;">'
+      + '<div style="font-family:Menlo,Consolas,monospace;font-size:8px;font-weight:500;letter-spacing:.1em;color:#a8a8a3;margin-bottom:4px;text-transform:uppercase;">' + label + '</div>'
+      + '<div style="font-family:\'Noto Serif JP\',serif;font-size:18px;font-weight:700;color:#111110;">' + value + '</div>'
+      + '</div>';
+  }
+
+  // ロゴ画像（画面ヘッダーから取得）
+  var logoSrc = '';
+  var logoImg = document.querySelector('.h-logo img');
+  if (logoImg) logoSrc = logoImg.src;
+
+  // ヘッダー：左にタイトル、中央にロゴ
+  var header = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:2px solid #111110;padding-bottom:14px;margin-bottom:16px;">'
+    + '<div style="justify-self:start;font-size:21px;font-weight:400;letter-spacing:.04em;line-height:1;color:#111110;">豚枝肉相場</div>'
+    + (logoSrc ? '<img src="' + logoSrc + '" alt="SAIBOKU" style="height:28px;width:auto;display:block;justify-self:center;transform:translateY(-2.95px);">' : '<div></div>')
+    + '<div></div>'
+    + '</div>';
+
+  // 上段3カード（画面と同じ構造）
+  header += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;">'
+    + pdfMetaCard('取引日', pdfPeriod)
+    + pdfMetaCard('3市場合計 取引頭数', pdfTotal + ' 頭')
+    + pdfMetaCard('全国屠畜頭数', pdfNatVal + ' 頭')
+    + '</div>';
+
+  // ── 3市場カード ──
+  var cards = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;height:calc(100% - 158px);">';
+
+  TARGET.forEach(function(mkt) {
+    var m = day.markets[mkt];
+    var FAC_NAME = {
+      '東京':     '東京都中央卸売市場食肉市場',
+      '仙台':     '仙台市食肉市場',
+      'さいたま': 'さいたま食肉市場'
+    }[mkt];
+
+    // 屠畜頭数（先に計算してヘッダーに渡す）
+    var headsStr = (m && m.total_heads !== null) ? Math.round(m.total_heads).toLocaleString() + ' 頭' : '—';
+
+    cards += '<div style="background:#fff;border:1px solid #dededa;border-radius:4px;overflow:hidden;display:flex;flex-direction:column;">';
+    // カードヘッダー：左に市場名、右に取引頭数（画面と同じ構造）
+    cards += '<div style="background:#f0f0ed;padding:8px 12px;border-bottom:1px solid #dededa;display:flex;align-items:center;justify-content:space-between;gap:8px;">'
+      + '<div style="font-family:\'Noto Serif JP\',serif;font-size:14px;font-weight:700;">' + FAC_NAME + '</div>'
+      + '<div style="font-family:\'Noto Serif JP\',serif;font-size:14px;font-weight:700;white-space:nowrap;">' + headsStr + '</div>'
+      + '</div>';
+
+    if (!m) {
+      cards += '<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#a8a8a3;font-size:10px;">この日のデータなし</div>';
+      cards += '</div>';
+      return;
+    }
+
+    cards += '<div style="flex:1;padding:10px 12px;display:flex;flex-direction:column;justify-content:flex-start;">';
+
+    // 代表相場
+    var rep = (m.grades['中'].price !== null ? m.grades['中'].price : m.grades['上'].price);
+    var repStr = rep !== null ? rep.toFixed(0) : '---';
+    var diff   = m.prev_diff;
+    var diffHtml = '';
+    if (diff !== null) {
+      var icon  = diff > 0 ? '▲' : (diff < 0 ? '▼' : '→');
+      var sign  = diff > 0 ? '+' : '';
+      var color = diff > 0 ? '#1a7a3a' : (diff < 0 ? '#b91c1c' : '#6b6b66');
+      var bg    = diff > 0 ? '#edf7f0' : (diff < 0 ? '#fef2f2' : '#f0f0ed');
+      diffHtml  = '<span style="font-size:26px;font-weight:700;color:' + color + ';background:' + bg + ';'
+        + 'border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:middle;">'
+        + icon + sign + diff + '</span>';
+    }
+
+    cards += '<div>'
+      + '<div style="font-size:9px;font-weight:500;letter-spacing:.1em;color:#a8a8a3;margin-bottom:3px;">「中」相場（前日差）</div>'
+      + '<div style="display:flex;align-items:baseline;gap:4px;">'
+      + '<span style="font-size:32px;font-weight:700;line-height:1;">' + repStr + '</span>'
+      + '<span style="font-size:9px;color:#6b6b66;">円/kg</span>'
+      + diffHtml
+      + '</div>'
+      + '</div>';
+
+    // 2. 等級テーブル（相場32pxの約8割＝26px、隙間ゼロ）
+    var GRADES = ['極上','上','中','並','等外'];
+    var GLBL   = {'極上':'極上','上':'上','中':'中','並':'並','等外':'等外'};
+    cards += '<table style="width:100%;border-collapse:collapse;margin:0;">';
+    cards += '<tr><th style="font-size:9px;color:#a8a8a3;font-weight:400;text-align:left;padding-bottom:2px;border-bottom:1px solid #dededa;">等級</th>'
+      + '<th style="font-size:9px;color:#a8a8a3;font-weight:400;text-align:right;padding-bottom:2px;border-bottom:1px solid #dededa;">円/kg</th></tr>';
+    GRADES.forEach(function(g, gi) {
+      var p     = m.grades[g].price;
+      // 色：「並」のみグレー、それ以外は黒（金色廃止）
+      var color = g === '並' ? '#6b6b66' : '#111110';
+      var border= gi < GRADES.length-1 ? 'border-bottom:1px solid #f0f0ed;' : '';
+      // 背景：「中」のみハイライト
+      var bgRow = g === '中' ? 'background:#ebebe7;' : '';
+      // 「中」の数値を強調
+      var priceSize = g === '中' ? '21px' : '19px';
+      var priceWeight = '700';
+      var labelWeight = g === '並' ? '500' : '700';
+      cards += '<tr style="' + border + bgRow + '">'
+        + '<td style="font-size:13px;font-weight:' + labelWeight + ';color:' + color + ';padding:2px 4px;">' + GLBL[g] + '</td>'
+        + '<td style="font-size:' + priceSize + ';font-weight:' + priceWeight + ';color:' + color + ';text-align:right;padding:2px 4px;">'
+        + (p !== null ? parseInt(p).toLocaleString() : '<span style="color:#a8a8a3;font-size:13px;">—</span>')
+        + '</td></tr>';
+    });
+    cards += '</table>';
+
+    cards += '</div></div>'; // body, card
+  });
+
+  cards += '</div>'; // grid
+
+  // フッター
+  var footer = '<div style="font-size:6.5px;color:#a8a8a3;margin-top:5px;">'
+    + '※ 表示データはJMMA公表値（消費税込み・円/kg）です。取引の際は各市場の公式情報をご確認ください。'
+    + '</div>';
+
+  pdfRoot.innerHTML = header + cards + footer;
+  document.body.appendChild(pdfRoot);
+
+  // ── html2canvas で描画 → jsPDF でPDF化 ──
+  html2canvas(pdfRoot, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#f7f7f5',
+    width:  1123,
+    height: 794,
+    logging: false
+  }).then(function(canvas) {
+    document.body.removeChild(pdfRoot);
+
+    var imgData = canvas.toDataURL('image/jpeg', 0.95);
+    var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+
+    // Blobで明示的にダウンロード（モバイル対応）
+    var pdfBlob = doc.output('blob');
+    var blobUrl = URL.createObjectURL(pdfBlob);
+    var a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = ymd + '_枝肉相場.pdf';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    }, 200);
+
+    if (btn) {
+      btn.innerHTML = orig;
+      btn.disabled  = false;
+    }
+  }).catch(function(e) {
+    if (document.getElementById('pdfRoot')) document.body.removeChild(pdfRoot);
+    if (btn) {
+      btn.innerHTML = orig;
+      btn.disabled  = false;
+    }
+    alert('PDF生成エラー: ' + e.message);
+  });
+}
+
+/* ── Slack メッセージ ── */
+function openSlack() {
+  var d = currentDisplayDate;
+  if (!d) return;
+  var dt = new Date(d + 'T00:00:00');
+  var dow = ['日','月','火','水','木','金','土'][dt.getDay()];
+  var ymd = dt.getFullYear() + pad2s(dt.getMonth()+1) + pad2s(dt.getDate());
+  var sd = window._summaryData || {};
+  var totalLine = sd.totalAll !== undefined
+    ? '3市場合計 取引頭数：' + Math.round(sd.totalAll).toLocaleString() + '頭'
+    : '3市場合計 取引頭数：—';
+  var natLine = _manualNationalHeads !== null
+    ? '全国屠畜頭数：' + _manualNationalHeads.toLocaleString() + '頭'
+    : '全国屠畜頭数：—';
+  var text = '@channel\n'
+    + dt.getFullYear() + '年' + (dt.getMonth()+1) + '月' + dt.getDate() + '日（' + dow + '曜日）の三市場の枝肉相場を共有します。\n'
+    + '詳細は、添付ファイルをご確認ください。\n'
+    + '概要は以下となります。\n\n'
+    + '・' + totalLine + '\n'
+    + '・' + natLine + '\n\n'
+    + 'ご確認の程、どうぞよろしくお願いいたします。';
+  document.getElementById('slackText').textContent = text;
+  document.getElementById('slackModal').classList.add('open');
+  document.getElementById('copyOk').style.display = 'none';
+}
+function closeSlack() { document.getElementById('slackModal').classList.remove('open'); }
+
+/* ── 屠畜がなかった日のSlackメッセージ ── */
+function openSlackNoSlaughter() {
+  var input = document.getElementById('noSlaughterDate');
+  var dateStr = input.value;
+  if (!dateStr) {
+    alert('日付を選択してください。');
+    return;
+  }
+  var dt = new Date(dateStr + 'T00:00:00');
+  var dow = ['日','月','火','水','木','金','土'][dt.getDay()];
+  var text = '@channel\n'
+    + dt.getFullYear() + '年' + (dt.getMonth()+1) + '月' + dt.getDate() + '日（' + dow + '曜日）は、三市場すべて屠畜がないため、\n'
+    + '本日の枝肉相場の共有はありません。\n\n'
+    + 'ご確認の程、どうぞよろしくお願いいたします。';
+  document.getElementById('slackText').textContent = text;
+  document.getElementById('slackModal').classList.add('open');
+  document.getElementById('copyOk').style.display = 'none';
+}
+function copySlack() {
+  var text = document.getElementById('slackText').textContent;
+  navigator.clipboard.writeText(text).then(function() {
+    document.getElementById('copyOk').style.display = 'inline';
+    setTimeout(function(){ document.getElementById('copyOk').style.display = 'none'; }, 2000);
+  });
+}
+function pad2s(n) { return n < 10 ? '0' + n : String(n); }
+
+/* 現在表示中の日付を追跡 */
+var currentDisplayDate = null;
+
+function showError(html) {
+  document.getElementById('errMsg').innerHTML = html;
+  document.getElementById('errBox').style.display = 'block';
+}
+function clearError() {
+  document.getElementById('errBox').style.display = 'none';
+}
+</script>
+</body>
+</html>
