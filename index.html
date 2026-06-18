@@ -880,22 +880,55 @@
     </div>
   </div>
 
-  <!-- ===== SCREEN: 交配・GP (no sub-menu, placeholder) ===== -->
+  <!-- ===== SCREEN: 交配・GP ===== -->
   <div class="screen" id="screen-breeding">
     <div class="back-bar">
       <button class="back-btn" onclick="goBack()">← 戻る</button>
     </div>
     <div class="screen-title">交配・GP 部門</div>
     <div class="menu-grid">
-      <div class="menu-card full" style="opacity:0.6; cursor:default; pointer-events:none">
-        <div class="card-img" style="background:#f5f5f5; width:100px; min-height:80px; display:flex; align-items:center; justify-content:center">
-          <span style="font-size:2.5rem">🐷</span>
+
+      <a class="menu-card full" href="https://saibokufarm.infinityfree.me/pig-breeding/" target="_blank">
+        <div class="card-img" style="background:linear-gradient(135deg,#fce4ec,#f8bbd0); width:100px; min-height:80px">
+          <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+            <!-- Family tree lines -->
+            <!-- Root node (bottom center) -->
+            <circle cx="50" cy="66" r="7" fill="#c62828" opacity="0.85"/>
+            <text x="50" y="69.5" text-anchor="middle" fill="#fff" font-size="6" font-weight="900">F</text>
+            <!-- Line up from root -->
+            <line x1="50" y1="59" x2="50" y2="50" stroke="#e57373" stroke-width="2"/>
+            <!-- Horizontal bar level 1 -->
+            <line x1="28" y1="50" x2="72" y2="50" stroke="#e57373" stroke-width="2"/>
+            <!-- Parents -->
+            <circle cx="28" cy="42" r="7" fill="#e57373" opacity="0.85"/>
+            <text x="28" y="45.5" text-anchor="middle" fill="#fff" font-size="6" font-weight="700">♀</text>
+            <circle cx="72" cy="42" r="7" fill="#e57373" opacity="0.85"/>
+            <text x="72" y="45.5" text-anchor="middle" fill="#fff" font-size="6" font-weight="700">♂</text>
+            <!-- Lines up from parents -->
+            <line x1="28" y1="35" x2="28" y2="26" stroke="#e57373" stroke-width="1.5"/>
+            <line x1="72" y1="35" x2="72" y2="26" stroke="#e57373" stroke-width="1.5"/>
+            <!-- Grandparent bars -->
+            <line x1="14" y1="26" x2="42" y2="26" stroke="#ef9a9a" stroke-width="1.5"/>
+            <line x1="58" y1="26" x2="86" y2="26" stroke="#ef9a9a" stroke-width="1.5"/>
+            <!-- Grandparents -->
+            <circle cx="14" cy="18" r="5.5" fill="#ef9a9a"/>
+            <circle cx="42" cy="18" r="5.5" fill="#ef9a9a"/>
+            <circle cx="58" cy="18" r="5.5" fill="#ef9a9a"/>
+            <circle cx="86" cy="18" r="5.5" fill="#ef9a9a"/>
+            <!-- Inbreeding coefficient badge -->
+            <rect x="60" y="56" width="32" height="16" rx="4" fill="#b71c1c" opacity="0.92"/>
+            <text x="76" y="63" text-anchor="middle" fill="#fff" font-size="5" font-weight="700">近交係数</text>
+            <text x="76" y="70" text-anchor="middle" fill="#ffe082" font-size="6.5" font-weight="900">F=0.0%</text>
+          </svg>
         </div>
         <div class="card-body">
-          <div class="card-label">専用アプリは準備中です</div>
-          <div class="card-desc">交配・GP 部門専用システムは今後追加予定です。全部署共通メニューをご利用ください。</div>
+          <div class="card-label">近交係数管理</div>
+          <div class="card-desc">血統・近交係数の計算・管理</div>
+          <div class="ext-badge">🔗 外部リンク</div>
         </div>
-      </div>
+        <div class="card-arrow">開く ›</div>
+      </a>
+
     </div>
   </div>
 
