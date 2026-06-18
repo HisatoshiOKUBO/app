@@ -467,6 +467,39 @@ var FAC = {
   '仙台':   '仙台市食肉市場',
   'さいたま': 'さいたま食肉市場'
 };
+
+/* 関東以北の市場（仙台を除く）ホワイトリスト：JMMAデータ上の市場名と一致させる
+   対象地域：北海道・東北6県・関東7都県（新潟・長野は含まない）
+   ※ 実際のJMMAデータに登場する市場名で記載 */
+var NORTH_MARKETS = [
+  /* 北海道 */
+  '札幌', '函館', '旭川', '帯広', '釧路',
+  /* 青森 */
+  '青森', '八戸', '弘前',
+  /* 岩手 */
+  '岩手', '盛岡',
+  /* 宮城（仙台は比較基準のため除外） */
+  /* 秋田 */
+  '秋田',
+  /* 山形 */
+  '山形', '酒田',
+  /* 福島 */
+  '福島', '郡山', '会津',
+  /* 茨城 */
+  '水戸', '茨城',
+  /* 栃木 */
+  '宇都宮', '栃木',
+  /* 群馬 */
+  '前橋', '群馬', '群馬中央',
+  /* 埼玉 */
+  'さいたま', '埼玉', '川口', '所沢', '熊谷',
+  /* 千葉 */
+  '千葉', '千葉市',
+  /* 東京 */
+  '東京', '東京芝浦',
+  /* 神奈川 */
+  '川崎', '横浜'
+];
 var GRADES = ['極上', '上', '中', '並', '等外'];
 var GLBL   = { '極上': '極上', '上': '上', '中': '中', '並': '並', '等外': '等外' };
 var DAYS   = ['日', '月', '火', '水', '木', '金', '土'];
@@ -741,6 +774,20 @@ function parseRows(rows, filename) {
       allDays[currentDate].national_heads += natH;
     }
 
+    // 全市場のデータを all_markets に保存（仙台比較用）
+    if (!allDays[currentDate].all_markets) allDays[currentDate].all_markets = {};
+    allDays[currentDate].all_markets[mktName] = {
+      total_heads: toFloat(row[col.heads]),
+      prev_diff:   toFloat(row[col.diff]),
+      grades: {
+        '極上': { price: toFloat(row[col.geki])   },
+        '上':   { price: toFloat(row[col.ue])     },
+        '中':   { price: toFloat(row[col.naka])   },
+        '並':   { price: toFloat(row[col.nami])   },
+        '等外': { price: toFloat(row[col.tougai]) }
+      }
+    };
+
     if (TARGET.indexOf(mktName) === -1) continue;
 
     allDays[currentDate].markets[mktName] = {
@@ -935,6 +982,82 @@ function buildDay(dateStr, day) {
       '</div>';
   }
 
+  // ── 仙台比較表の生成 ──
+  var sendaiTable = '';
+  var sendaiMkt = day.markets['仙台'];
+  var allMkts = day.all_markets || {};
+  if (sendaiMkt) {
+    var COMPARE_GRADES = ['中', '並', '等外'];
+    var GRADE_LABELS = { '中': '「中」', '並': '「並」', '等外': '「等外」' };
+
+    // NORTH_MARKETS ホワイトリストに含まれる市場のみを比較対象とする
+    // （仙台はホワイトリストに含まれていないため自動除外）
+
+    var gradeRows = '';
+    COMPARE_GRADES.forEach(function(grade) {
+      var sendaiPrice = sendaiMkt.grades[grade].price;
+      if (sendaiPrice === null) return;
+
+      // 仙台より高い市場を収集・ソート（降順）
+      var better = [];
+      Object.keys(allMkts).forEach(function(name) {
+        if (NORTH_MARKETS.indexOf(name) === -1) return; // ホワイトリスト外は除外
+        var m2 = allMkts[name];
+        if (!m2) return;
+        var p = m2.grades[grade].price;
+        if (p === null) return;
+        if (p > sendaiPrice) {
+          better.push({ name: name, price: p, diff: Math.round(p - sendaiPrice) });
+        }
+      });
+      better.sort(function(a, b) { return b.price - a.price; });
+      var top3 = better.slice(0, 3);
+
+      if (top3.length === 0) {
+        gradeRows += '<tr>'
+          + '<td style="font-size:13px;font-weight:700;color:#111110;padding:6px 8px;border-bottom:1px solid #f0f0ed;white-space:nowrap;">' + GRADE_LABELS[grade] + '</td>'
+          + '<td colspan="3" style="font-size:12px;color:#a8a8a3;padding:6px 8px;border-bottom:1px solid #f0f0ed;">仙台より高い市場なし</td>'
+          + '</tr>';
+        return;
+      }
+
+      var cells = '';
+      for (var i = 0; i < 3; i++) {
+        if (top3[i]) {
+          cells += '<td style="font-size:12px;color:#111110;padding:6px 8px;border-bottom:1px solid #f0f0ed;">'
+            + '<span style="font-weight:700;">' + top3[i].name + '</span>'
+            + '<span style="font-family:monospace;font-size:13px;margin-left:6px;">' + top3[i].price.toFixed(0) + '円</span>'
+            + '<span style="font-size:12px;color:#1a7a3a;background:#edf7f0;border-radius:3px;padding:1px 4px;margin-left:4px;font-weight:700;">+' + top3[i].diff + '円</span>'
+            + '</td>';
+        } else {
+          cells += '<td style="padding:6px 8px;border-bottom:1px solid #f0f0ed;"></td>';
+        }
+      }
+      gradeRows += '<tr>'
+        + '<td style="font-size:13px;font-weight:700;color:#111110;padding:6px 8px;border-bottom:1px solid #f0f0ed;white-space:nowrap;background:#ebebe7;">' + GRADE_LABELS[grade] + '</td>'
+        + cells
+        + '</tr>';
+    });
+
+    sendaiTable = '<div class="mkt-card col-12" style="margin-top:0;">'
+      + '<div class="mkt-head">'
+      + '<div class="mkt-name">仙台より相場が高い関東以北の市場（上位3市場）</div>'
+      + '<div style="font-size:11px;color:#6b6b66;">仙台：中 ' + sendaiMkt.grades['中'].price.toFixed(0) + '円 ／ 並 ' + (sendaiMkt.grades['並'].price !== null ? sendaiMkt.grades['並'].price.toFixed(0) : '—') + '円 ／ 等外 ' + (sendaiMkt.grades['等外'].price !== null ? sendaiMkt.grades['等外'].price.toFixed(0) : '—') + '円</div>'
+      + '</div>'
+      + '<div class="mkt-body" style="padding:0;">'
+      + '<table style="width:100%;border-collapse:collapse;">'
+      + '<thead><tr>'
+      + '<th style="font-size:9px;color:#a8a8a3;font-weight:400;text-align:left;padding:6px 8px;border-bottom:1px solid #dededa;width:60px;">等級</th>'
+      + '<th style="font-size:9px;color:#a8a8a3;font-weight:400;text-align:left;padding:6px 8px;border-bottom:1px solid #dededa;">1位</th>'
+      + '<th style="font-size:9px;color:#a8a8a3;font-weight:400;text-align:left;padding:6px 8px;border-bottom:1px solid #dededa;">2位</th>'
+      + '<th style="font-size:9px;color:#a8a8a3;font-weight:400;text-align:left;padding:6px 8px;border-bottom:1px solid #dededa;">3位</th>'
+      + '</tr></thead>'
+      + '<tbody>' + gradeRows + '</tbody>'
+      + '</table>'
+      + '</div>'
+      + '</div>';
+  }
+
   return '<div class="grid12 day-meta">' +
       '<div class="dm-col col-4"><div class="dm-label">取引日</div><div class="dm-value">' + jpDate + '</div></div>' +
       '<div class="dm-col col-4"><div class="dm-label">3市場合計 取引頭数</div>' +
@@ -946,7 +1069,8 @@ function buildDay(dateStr, day) {
         '</span> 頭</div>' +
       '</div>' +
     '</div>' +
-    '<div class="grid12 mkt-grid">' + cards + '</div>';
+    '<div class="grid12 mkt-grid">' + cards + '</div>' +
+    (sendaiTable ? '<div class="grid12" style="margin-top:' + 'var(--gap-card)' + '">' + sendaiTable + '</div>' : '');
 }
 
 function fmtJP(d) {
@@ -1182,52 +1306,163 @@ function printPDF() {
 
   cards += '</div>'; // grid
 
-  // フッター
+  // フッター（両ページ共通）
   var footer = '<div style="font-size:6.5px;color:#a8a8a3;margin-top:5px;">'
     + '※ 表示データはJMMA公表値（消費税込み・円/kg）です。取引の際は各市場の公式情報をご確認ください。'
     + '</div>';
 
+  // ── 2ページ目：仙台比較表 ──
+  var sendaiMktPdf = day.markets['仙台'];
+  var allMktsPdf   = day.all_markets || {};
+  var page2Html    = '';
+
+  if (sendaiMktPdf) {
+    var CG = ['中', '並', '等外'];
+    var CGL = { '中': '「中」', '並': '「並」', '等外': '「等外」' };
+
+    var p2Rows = '';
+    CG.forEach(function(grade) {
+      var sendaiP = sendaiMktPdf.grades[grade].price;
+      if (sendaiP === null) return;
+
+      var better2 = [];
+      Object.keys(allMktsPdf).forEach(function(name) {
+        if (NORTH_MARKETS.indexOf(name) === -1) return;
+        var m2 = allMktsPdf[name];
+        if (!m2) return;
+        var p2 = m2.grades[grade].price;
+        if (p2 === null) return;
+        if (p2 > sendaiP) better2.push({ name: name, price: p2, diff: Math.round(p2 - sendaiP) });
+      });
+      better2.sort(function(a, b) { return b.price - a.price; });
+      var top3p = better2.slice(0, 3);
+
+      var bgGrade = grade === '中' ? '#ebebe7' : '#fff';
+
+      if (top3p.length === 0) {
+        p2Rows += '<tr>'
+          + '<td style="font-size:16px;font-weight:700;padding:12px 16px;border-bottom:1px solid #f0f0ed;background:' + bgGrade + ';white-space:nowrap;">' + CGL[grade] + '</td>'
+          + '<td colspan="3" style="font-size:15px;color:#a8a8a3;padding:12px 16px;border-bottom:1px solid #f0f0ed;">仙台より高い市場なし</td>'
+          + '</tr>';
+        return;
+      }
+
+      var p2cells = '';
+      for (var i2 = 0; i2 < 3; i2++) {
+        if (top3p[i2]) {
+          p2cells += '<td style="padding:12px 16px;border-bottom:1px solid #f0f0ed;">'
+            + '<span style="font-size:18px;font-weight:700;">' + top3p[i2].name + '</span>'
+            + '<span style="font-family:monospace;font-size:20px;margin-left:8px;">' + top3p[i2].price.toFixed(0) + '円</span>'
+            + '<span style="font-size:16px;color:#1a7a3a;background:#edf7f0;border-radius:3px;padding:2px 6px;margin-left:6px;font-weight:700;">+' + top3p[i2].diff + '円</span>'
+            + '</td>';
+        } else {
+          p2cells += '<td style="padding:12px 16px;border-bottom:1px solid #f0f0ed;"></td>';
+        }
+      }
+      p2Rows += '<tr>'
+        + '<td style="font-size:16px;font-weight:700;padding:12px 16px;border-bottom:1px solid #f0f0ed;background:' + bgGrade + ';white-space:nowrap;">' + CGL[grade] + '</td>'
+        + p2cells
+        + '</tr>';
+    });
+
+    // 仙台基準値サマリー
+    var sendaiSummary = '仙台基準：'
+      + '中 ' + (sendaiMktPdf.grades['中'].price !== null ? sendaiMktPdf.grades['中'].price.toFixed(0) : '—') + '円'
+      + '　並 ' + (sendaiMktPdf.grades['並'].price !== null ? sendaiMktPdf.grades['並'].price.toFixed(0) : '—') + '円'
+      + '　等外 ' + (sendaiMktPdf.grades['等外'].price !== null ? sendaiMktPdf.grades['等外'].price.toFixed(0) : '—') + '円';
+
+    page2Html =
+      // ページ2ヘッダー（ページ1と共通レイアウト）
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;border-bottom:2px solid #111110;padding-bottom:14px;margin-bottom:24px;">'
+      + '<div style="justify-self:start;font-size:21px;font-weight:400;letter-spacing:.04em;line-height:1;color:#111110;">豚枝肉相場</div>'
+      + (logoSrc ? '<img src="' + logoSrc + '" alt="SAIBOKU" style="height:28px;width:auto;display:block;justify-self:center;transform:translateY(-2.95px);">' : '<div></div>')
+      + '<div style="justify-self:end;font-size:15px;color:#6b6b66;">' + pdfPeriod + '</div>'
+      + '</div>'
+      // テーブルタイトル（22×1.5=33px）
+      + '<div style="font-size:20px;font-weight:700;margin-bottom:6px;color:#111110;">仙台より相場が高い関東以北の市場（上位3市場）</div>'
+      // 仙台基準値サマリー（15×1.5=23px）
+      + '<div style="font-size:13px;color:#6b6b66;margin-bottom:14px;">' + sendaiSummary + '</div>'
+      // 比較テーブル本体
+      + '<div style="background:#fff;border:1px solid #dededa;border-radius:6px;overflow:hidden;">'
+      + '<table style="width:100%;border-collapse:collapse;">'
+      + '<thead><tr style="background:#f0f0ed;">'
+      // ヘッダー列（13×2=26px）
+      + '<th style="font-size:14px;color:#a8a8a3;font-weight:400;text-align:left;padding:10px 16px;border-bottom:1px solid #dededa;width:90px;">等級</th>'
+      + '<th style="font-size:14px;color:#a8a8a3;font-weight:400;text-align:left;padding:10px 16px;border-bottom:1px solid #dededa;">1位</th>'
+      + '<th style="font-size:14px;color:#a8a8a3;font-weight:400;text-align:left;padding:10px 16px;border-bottom:1px solid #dededa;">2位</th>'
+      + '<th style="font-size:14px;color:#a8a8a3;font-weight:400;text-align:left;padding:10px 16px;border-bottom:1px solid #dededa;">3位</th>'
+      + '</tr></thead>'
+      + '<tbody>' + p2Rows + '</tbody>'
+      + '</table>'
+      + '</div>';
+  }
+
+  // ── ページ1をDOMに追加してキャプチャ ──
   pdfRoot.innerHTML = header + cards + footer;
   document.body.appendChild(pdfRoot);
 
-  // ── html2canvas で描画 → jsPDF でPDF化 ──
   html2canvas(pdfRoot, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: '#f7f7f5',
-    width:  1123,
-    height: 794,
-    logging: false
-  }).then(function(canvas) {
+    scale: 2, useCORS: true, backgroundColor: '#f7f7f5',
+    width: 1123, height: 794, logging: false
+  }).then(function(canvas1) {
     document.body.removeChild(pdfRoot);
+    var img1 = canvas1.toDataURL('image/jpeg', 0.95);
 
-    var imgData = canvas.toDataURL('image/jpeg', 0.95);
-    var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    doc.addImage(imgData, 'JPEG', 0, 0, 297, 210);
-
-    // Blobで明示的にダウンロード（モバイル対応）
-    var pdfBlob = doc.output('blob');
-    var blobUrl = URL.createObjectURL(pdfBlob);
-    var a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = ymd + '_枝肉相場.pdf';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-    }, 200);
-
-    if (btn) {
-      btn.innerHTML = orig;
-      btn.disabled  = false;
+    // ── ページ2が不要な場合は1ページで終了 ──
+    if (!page2Html) {
+      var doc1 = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      doc1.addImage(img1, 'JPEG', 0, 0, 297, 210);
+      var blob1 = doc1.output('blob');
+      var url1  = URL.createObjectURL(blob1);
+      var a1 = document.createElement('a');
+      a1.href = url1; a1.download = ymd + '_枝肉相場.pdf';
+      document.body.appendChild(a1); a1.click();
+      setTimeout(function(){ document.body.removeChild(a1); URL.revokeObjectURL(url1); }, 200);
+      if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+      return;
     }
+
+    // ── ページ2用コンテナ ──
+    var pdfRoot2 = document.createElement('div');
+    pdfRoot2.style.cssText = [
+      'position:fixed', 'left:-9999px', 'top:0',
+      'width:1123px', 'height:794px',
+      'background:#f7f7f5',
+      'font-family:"Noto Sans JP",sans-serif',
+      'overflow:hidden', 'box-sizing:border-box',
+      'padding:28px 36px 22px 36px'
+    ].join(';');
+    pdfRoot2.innerHTML = page2Html + footer;
+    document.body.appendChild(pdfRoot2);
+
+    html2canvas(pdfRoot2, {
+      scale: 2, useCORS: true, backgroundColor: '#f7f7f5',
+      width: 1123, height: 794, logging: false
+    }).then(function(canvas2) {
+      document.body.removeChild(pdfRoot2);
+      var img2 = canvas2.toDataURL('image/jpeg', 0.95);
+
+      var doc2 = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      doc2.addImage(img1, 'JPEG', 0, 0, 297, 210);
+      doc2.addPage();
+      doc2.addImage(img2, 'JPEG', 0, 0, 297, 210);
+
+      var blob2 = doc2.output('blob');
+      var url2  = URL.createObjectURL(blob2);
+      var a2 = document.createElement('a');
+      a2.href = url2; a2.download = ymd + '_枝肉相場.pdf';
+      document.body.appendChild(a2); a2.click();
+      setTimeout(function(){ document.body.removeChild(a2); URL.revokeObjectURL(url2); }, 200);
+      if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+    }).catch(function(e) {
+      document.body.removeChild(pdfRoot2);
+      if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+      alert('PDF生成エラー（2ページ目）: ' + e.message);
+    });
+
   }).catch(function(e) {
     if (document.getElementById('pdfRoot')) document.body.removeChild(pdfRoot);
-    if (btn) {
-      btn.innerHTML = orig;
-      btn.disabled  = false;
-    }
+    if (btn) { btn.innerHTML = orig; btn.disabled = false; }
     alert('PDF生成エラー: ' + e.message);
   });
 }
