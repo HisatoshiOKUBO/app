@@ -676,6 +676,69 @@ function readAB(file) {
     r.readAsArrayBuffer(file);
   });
 }
+// ─────────────────────────────────────────
+//  まとめる：埋め込みJPEG画像の再圧縮（① 出力サイズ削減）
+//  DCTDecode(JPEG)の画像で、指定サイズより大きいものだけ
+//  縮小・再エンコードして差し替える。他フィルタ(Flate等)は対象外。
+// ─────────────────────────────────────────
+async function compressJpegImagesInDoc(doc, opts) {
+  opts = opts || {};
+  const maxDim   = opts.maxDim   || 1600;   // 長辺の上限(px)
+  const quality  = opts.quality  || 0.72;   // JPEG品質
+  const minBytes = opts.minBytes || 60000;  // これより小さい画像は対象外
+  if (typeof createImageBitmap === 'undefined') return; // 非対応環境は何もしない
+
+  const { PDFName, PDFNumber, PDFRawStream } = PDFLib;
+  let indirects;
+  try { indirects = doc.context.enumerateIndirectObjects(); }
+  catch (e) { return; }
+
+  for (const entry of indirects) {
+    const obj = entry[1];
+    if (!(obj instanceof PDFRawStream)) continue;
+    const dict = obj.dict;
+    const subtype = dict.get(PDFName.of('Subtype'));
+    if (!subtype || subtype.toString() !== '/Image') continue;
+    const filter = dict.get(PDFName.of('Filter'));
+    const filterStr = filter ? filter.toString() : '';
+    if (filterStr.indexOf('DCTDecode') === -1) continue; // JPEG以外は対象外
+    const bytes = obj.contents;
+    if (!bytes || bytes.length < minBytes) continue;
+
+    try {
+      const blob = new Blob([bytes], { type: 'image/jpeg' });
+      const bitmap = await createImageBitmap(blob);
+      const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+      if (scale >= 0.98) { if (bitmap.close) bitmap.close(); continue; } // 既に十分小さい
+
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      if (bitmap.close) bitmap.close();
+
+      const newBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+      if (!newBlob) continue;
+      const newBytes = new Uint8Array(await newBlob.arrayBuffer());
+      if (newBytes.length >= bytes.length) continue; // 再圧縮で増えるなら元のまま維持
+
+      obj.contents = newBytes;
+      dict.set(PDFName.of('Width'), PDFNumber.of(w));
+      dict.set(PDFName.of('Height'), PDFNumber.of(h));
+      dict.set(PDFName.of('Length'), PDFNumber.of(newBytes.length));
+      dict.set(PDFName.of('ColorSpace'), PDFName.of('DeviceRGB')); // canvas経由でRGB化されるため揃える
+      dict.set(PDFName.of('BitsPerComponent'), PDFNumber.of(8));
+      dict.delete(PDFName.of('Decode'));       // CMYK等の反転指定が残っていると色が壊れるため削除
+      dict.delete(PDFName.of('DecodeParms'));  // 元のJPEGパラメータは新データに合わないため削除
+    } catch (e) {
+      // 個別画像の変換に失敗しても全体は継続（元画像のまま）
+      continue;
+    }
+  }
+}
+
 function dlBlob(blob,name) {
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -881,18 +944,23 @@ btnRunM.addEventListener('click',async()=>{
     const total=SM.items.length;
     for(let i=0;i<total;i++){
       const item=SM.items[i];
-      setProgM(Math.round((i/total)*90),`読み込み中 (${i+1}/${total})`,item.name);
-      const ab=await readAB(item.file);
+      setProgM(Math.round((i/total)*80),`読み込み中 (${i+1}/${total})`,item.name);
+      let ab=await readAB(item.file);
       let src;
-      try{src=await PDFDocument.load(ab,{ignoreEncryption:true});}
+      try{src=await PDFDocument.load(ab,{ignoreEncryption:true,updateMetadata:false});}
       catch(e){throw new Error(`"${item.name}" はPDFとして読み込めませんでした`);}
-      const pc=src.getPageCount();if(pc===0)continue;
-      setProgM(Math.round(((i+0.5)/total)*90),`統合中 (${i+1}/${total})`,`${item.name}  —  ${pc}ページ`);
+      ab=null; // ① ArrayBufferはロード後は不要なので早めに解放してGCを助ける
+      const pc=src.getPageCount();
+      if(pc===0){src=null;continue;}
+      setProgM(Math.round(((i+0.3)/total)*80),`画像を最適化中 (${i+1}/${total})`,item.name);
+      await compressJpegImagesInDoc(src); // ① 大きいJPEG画像を縮小・再圧縮してサイズを抑える
+      setProgM(Math.round(((i+0.7)/total)*80),`統合中 (${i+1}/${total})`,`${item.name}  —  ${pc}ページ`);
       const copied=await merged.copyPages(src,src.getPageIndices());
       copied.forEach(p=>merged.addPage(p));
+      src=null; // ② コピー済みの元PDFDocumentはもう不要なので参照を切ってGCを助ける
     }
-    setProgM(95,'保存中…','');
-    const bytes=await merged.save();
+    setProgM(90,'保存中…','');
+    const bytes=await merged.save({useObjectStreams:true});
     const blob=new Blob([bytes],{type:'application/pdf'});
     setProgM(100,'完了！','');
     showResultM(blob);
