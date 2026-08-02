@@ -646,8 +646,7 @@ async function doLookup(manual) {
   const suffix = String(parseInt(raw.slice(-3), 10));
   const { min, max } = getRangeDays();
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
+  const today = todayJST();
   const upperBound = addDays(today, -min); // これより新しい生年月日はNG
   const lowerBound = addDays(today, -max); // これより古い生年月日はNG
   const upperStr = toISODate(upperBound);
@@ -676,8 +675,7 @@ function applyResult(raw, suffix, data) {
     showEmptyResult(true, raw);
     return;
   }
-  const today = new Date();
-  today.setHours(0,0,0,0);
+  const today = todayJST();
   const birth = new Date(data.birth_date.replace(/\//g,'-'));
   const ageDays = Math.round((today - birth) / 86400000);
 
@@ -687,7 +685,7 @@ function applyResult(raw, suffix, data) {
   document.getElementById('r-ear').textContent = raw;
   document.getElementById('r-birth').textContent = formatDateJP(data.birth_date);
   document.getElementById('r-age').innerHTML = (ageDays >= 0 ? ageDays : '--') + '<span class="r-unit">日</span>';
-  document.getElementById('r-note').textContent = `本日（${formatDateJP(toISODate(today))}）基準で算出`;
+  document.getElementById('r-note').textContent = `本日（${formatDateJP(toISODate(today))}・日本時間）基準で算出`;
 
   addHistory(raw, data.birth_date, ageDays);
 }
@@ -900,9 +898,17 @@ function stripExcelText(s) {
 // ============================================
 // ユーティリティ
 // ============================================
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000; // 日本時間 = UTC+9
+
+// 端末のタイムゾーン設定に依存せず、常に「日本時間の本日0時」を
+// UTC深夜0時としてアンカーしたDateオブジェクトを返す
+function todayJST() {
+  const jstNow = new Date(Date.now() + JST_OFFSET_MS);
+  return new Date(Date.UTC(jstNow.getUTCFullYear(), jstNow.getUTCMonth(), jstNow.getUTCDate()));
+}
 function addDays(date, delta) {
   const d = new Date(date);
-  d.setDate(d.getDate() + delta);
+  d.setUTCDate(d.getUTCDate() + delta); // UTCベースで演算し端末TZの影響を受けない
   return d;
 }
 function toISODate(d) { return d.toISOString().slice(0, 10); }
