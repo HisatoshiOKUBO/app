@@ -350,52 +350,7 @@ body {
 
 <main class="main">
 
-  <!-- ① CSVインポート -->
-  <div class="card">
-    <div class="card-title">📂 繁殖記録マスタ CSVインポート</div>
-    <div class="card-desc">
-      Web-PICSの分娩記録CSVを取り込むと、耳刻の入力だけで<strong>生年月日</strong>と<strong>今日時点の日齢</strong>を自動抽出できます。<br>
-      本アプリのデータは「出荷生体管理システム」とは<strong>別のデータベース（<code>age_calc_breeding_master</code>）</strong>に保存されるため、既存データと重複・混在しません。
-    </div>
-    <div id="csv-drop-zone" class="csv-drop-zone"
-      ondragover="event.preventDefault();this.style.borderColor='var(--primary)'"
-      ondragleave="this.style.borderColor=''"
-      ondrop="onCSVDrop(event)">
-      <div style="font-size:26px;margin-bottom:4px;">📂</div>
-      <div style="font-size:13.5px;color:var(--text-sub);font-weight:600;">CSVをここにドロップ</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">またはタップしてファイルを選択</div>
-      <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleBreedingCSV(this.files[0])">
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:6px;">
-      <div id="master-status" style="font-size:12.5px;color:var(--text-muted);">確認中...</div>
-      <button class="btn btn-ghost btn-sm" onclick="loadMasterCount()">🔄 件数更新</button>
-    </div>
-    <div id="import-status" style="font-size:12.5px;color:var(--text-sub);margin-top:6px;"></div>
-  </div>
-
-  <!-- ② 日齢範囲の指定 -->
-  <div class="card">
-    <div class="card-title">📏 日齢範囲の指定</div>
-    <div class="card-desc">
-      今日の日付を基準に、抽出対象とする<strong>日齢の範囲</strong>を指定します。同じ耳刻番号が複数世代に存在する場合の絞り込みに使用します。
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">最小日齢（日以上）</label>
-        <input type="number" id="range-min" class="form-control" min="0" max="9999" step="1" onchange="onRangeChange()">
-      </div>
-      <div class="form-group">
-        <label class="form-label">最大日齢（日以下）</label>
-        <input type="number" id="range-max" class="form-control" min="0" max="9999" step="1" onchange="onRangeChange()">
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
-      <span id="range-note" class="badge badge-green">✓ デフォルト範囲</span>
-      <button class="btn btn-ghost btn-sm" onclick="resetRange()">リセット</button>
-    </div>
-  </div>
-
-  <!-- ③ 耳刻入力 → 抽出 -->
+  <!-- ① 耳刻入力 → 抽出 -->
   <div class="card">
     <div class="card-title">🐷 耳刻の入力</div>
     <div class="ear-input-wrap">
@@ -427,6 +382,51 @@ body {
         </div>
       </div>
       <div class="result-note" id="r-note"></div>
+    </div>
+  </div>
+
+  <!-- ② CSVインポート -->
+  <div class="card">
+    <div class="card-title">📂 繁殖記録マスタ CSVインポート</div>
+    <div class="card-desc">
+      Web-PICSの分娩記録CSVを取り込むと、耳刻の入力だけで<strong>生年月日</strong>と<strong>今日時点の日齢</strong>を自動抽出できます。<br>
+      本アプリのデータは「出荷生体管理システム」とは<strong>別のデータベース（<code>age_calc_breeding_master</code>）</strong>に保存されるため、既存データと重複・混在しません。
+    </div>
+    <div id="csv-drop-zone" class="csv-drop-zone"
+      ondragover="event.preventDefault();this.style.borderColor='var(--primary)'"
+      ondragleave="this.style.borderColor=''"
+      ondrop="onCSVDrop(event)">
+      <div style="font-size:26px;margin-bottom:4px;">📂</div>
+      <div style="font-size:13.5px;color:var(--text-sub);font-weight:600;">CSVをここにドロップ</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">またはタップしてファイルを選択</div>
+      <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleBreedingCSV(this.files[0])">
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:6px;">
+      <div id="master-status" style="font-size:12.5px;color:var(--text-muted);">確認中...</div>
+      <button class="btn btn-ghost btn-sm" onclick="loadMasterCount()">🔄 件数更新</button>
+    </div>
+    <div id="import-status" style="font-size:12.5px;color:var(--text-sub);margin-top:6px;"></div>
+  </div>
+
+  <!-- ③ 日齢範囲の指定 -->
+  <div class="card">
+    <div class="card-title">📏 日齢範囲の指定</div>
+    <div class="card-desc">
+      今日の日付を基準に、抽出対象とする<strong>日齢の範囲</strong>を指定します。同じ耳刻番号が複数世代に存在する場合の絞り込みに使用します。
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">最小日齢（日以上）</label>
+        <input type="number" id="range-min" class="form-control" min="0" max="9999" step="1" onchange="onRangeChange()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">最大日齢（日以下）</label>
+        <input type="number" id="range-max" class="form-control" min="0" max="9999" step="1" onchange="onRangeChange()">
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+      <span id="range-note" class="badge badge-green">✓ デフォルト範囲</span>
+      <button class="btn btn-ghost btn-sm" onclick="resetRange()">リセット</button>
     </div>
   </div>
 
